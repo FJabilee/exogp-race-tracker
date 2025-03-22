@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ExoGP Leaderboards
+
+A dashboard for tracking player performance across all tracks in ExoGP racing game. This application allows players to search for their race times, compare with the best players, and view their rankings across different tracks.
+
+![ExoGP Leaderboards Dashboard](./public/screenshot.png)
+
+## Features
+
+- Search for player performance by name
+- Toggle between Time Trials and Quickplay modes
+- View player rankings across all tracks
+- Compare player times with the best times
+- See average rank and best rank statistics
+- Dark mode UI
+
+## Technologies Used
+
+- **Next.js 15** - Latest React framework with App Router
+- **React 19** - Latest UI library with improved performance
+- **TypeScript** - Type-safe JavaScript
+- **Tailwind CSS v4** - Latest utility-first CSS framework
+- **shadcn/ui** - Reusable UI components
+- **Lucide React** - Icon library
+- **Bun** - Fast JavaScript runtime and package manager
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Bun 1.0 or later
+
+### Installation
+
+1. Clone the repository:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+git clone https://github.com/FJabilee/exogp-race-tracker.git
+cd exogp-race-tracker
+```
+
+2. Install dependencies:
+
+
+```shellscript
+bun install
+```
+
+3. Run the development server:
+
+
+```shellscript
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Usage
 
-## Learn More
+1. Enter a player name in the search field
+2. Select the game mode (Time Trials or Quickplay)
+3. Click the Search button
+4. View the player's performance across all tracks
+5. The dashboard will display:
 
-To learn more about Next.js, take a look at the following resources:
+1. Number of tracks where the player is ranked
+2. Average rank across all tracks
+3. Best rank achieved
+4. Detailed performance for each track including rank, time, and comparison with the best time
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API Integration
 
-## Deploy on Vercel
+The dashboard integrates with the ExoGP leaderboards API to fetch player data:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```typescript
+const url = `https://leaderboards.planetatmos.com/api/leaderboard/tracks/${trackId}?page=0&perPage=20&distinctOnUser=true&mode=${mode}&startDate=${startDate}&endDate=${endDate}&track=${trackId}`
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Customization
+
+### Theming
+
+The application uses a custom red theme with HSL color values. You can modify the theme by editing the CSS variables in `app/globals.css`:
+
+```css
+:root {
+  --primary: hsl(0 72.2% 50.6%);
+  --primary-foreground: hsl(0 85.7% 97.3%);
+  /* Other color variables */
+}
+```
+
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Planet Atmos for the ExoGP game and leaderboard API
+- shadcn/ui for the beautiful UI components
+- Coolify for making things easy for me to deploy webapps!
