@@ -8,6 +8,9 @@ export default function Home() {
         <p className="text-muted-foreground">
           Track your race times across all tracks and compare with the best players in the game
         </p>
+        <p className="text-muted-foreground">
+          Insert your Epic Games Username below
+        </p>
       </div>
       <PlayerDashboard />
     </main>

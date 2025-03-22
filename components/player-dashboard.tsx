@@ -106,7 +106,7 @@ export function PlayerDashboard() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="md:col-span-3">
                             <Input
-                                placeholder="Player name"
+                                placeholder="Epic Games username"
                                 value={playerName}
                                 onChange={(e) => setPlayerName(e.target.value)}
                                 required
