@@ -22,3 +22,95 @@ export const trackOptions = [
     { value: "bounty-obelisk-vipersgorge-slitherreverse", label: "Slither Reverse" },
 ]
 
+// Time Range options with fixed date calculations
+export const timeRangeOptions = [
+    { value: "stage3", label: "Stage 3", startDate: "2025-03-13T17:00:00.000Z", endDate: "2025-04-28T06:59:59.999Z" },
+    { value: "stage2", label: "Stage 2", startDate: "2025-01-01T00:00:00.000Z", endDate: "2025-03-13T16:59:59.999Z" },
+    { value: "all", label: "All Time", startDate: "2024-01-01T00:00:00.000Z", endDate: new Date().toISOString() },
+    {
+        value: "today",
+        label: "Today",
+        get startDate() {
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            return today.toISOString()
+        },
+        get endDate() {
+            return new Date().toISOString()
+        },
+    },
+    {
+        value: "week",
+        label: "This Week",
+        get startDate() {
+            return getStartOfWeek().toISOString()
+        },
+        get endDate() {
+            return new Date().toISOString()
+        },
+    },
+    {
+        value: "month",
+        label: "This Month",
+        get startDate() {
+            return getStartOfMonth().toISOString()
+        },
+        get endDate() {
+            return new Date().toISOString()
+        },
+    },
+    { value: "custom", label: "Custom Range", startDate: "", endDate: "" },
+]
+
+// Region options
+export const regionOptions = [
+    { value: "all", label: "All Regions" },
+    { value: "2", label: "Europe" },
+    { value: "10", label: "Hong Kong" },
+    { value: "4", label: "LATAM" },
+    { value: "1", label: "NA East" },
+    { value: "9", label: "NA West" },
+    { value: "7", label: "Singapore" },
+]
+
+// Helper functions for date calculations
+function getStartOfWeek() {
+    // Get current date in UTC
+    const now = new Date()
+
+    // Clone the date for calculations
+    const currentDate = new Date(now)
+
+    // Find the most recent Sunday
+    const dayOfWeek = currentDate.getUTCDay() // 0 = Sunday, 1 = Monday, etc.
+
+    // Calculate days to subtract to get to the previous Sunday
+    // If today is Sunday, we need to check if it's before or after 11:59 PM UTC
+    let daysToSubtract = dayOfWeek
+
+    // If it's Sunday but before 11:59 PM UTC, we need to use the previous Sunday
+    if (dayOfWeek === 0) {
+        const hours = currentDate.getUTCHours()
+        const minutes = currentDate.getUTCMinutes()
+
+        // If it's before 23:59 (11:59 PM) UTC, use the previous week's Sunday
+        if (hours < 23 || (hours === 23 && minutes < 59)) {
+            daysToSubtract = 7 // Go back to previous Sunday
+        }
+    }
+
+    // Calculate the start date (previous Sunday)
+    const startDate = new Date(currentDate)
+    startDate.setUTCDate(currentDate.getUTCDate() - daysToSubtract)
+
+    // Set the time to 23:59:00 UTC (11:59 PM)
+    startDate.setUTCHours(23, 59, 0, 0)
+
+    return startDate
+}
+
+function getStartOfMonth() {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+}
+
