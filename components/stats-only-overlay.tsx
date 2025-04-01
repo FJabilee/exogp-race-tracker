@@ -23,6 +23,18 @@ const getTimeRangeLabel = (value: string): string => {
     return timeRange ? timeRange.label : "Leaderboard"
 }
 
+// Get mode label from value
+const getModeLabel = (value: string): string => {
+    switch (value) {
+        case "EMatchMode::TimeTrials":
+            return "Time Trials"
+        case "EMatchMode::Matchmaking_Unranked":
+            return "Quickplay"
+        default:
+            return "Time Trials"
+    }
+}
+
 export function StatsOnlyOverlay({
     playerName,
     refreshInterval = 300, // Default 5 minutes
@@ -38,6 +50,9 @@ export function StatsOnlyOverlay({
 
     // Get the time range label for the title
     const timeRangeLabel = getTimeRangeLabel(timeRange)
+
+    // Get the mode label for the title
+    const modeLabel = getModeLabel(mode)
 
     // Construct the full referral URL
     const referralUrl = `https://planetatmos.helika.io/${referralCode}`
@@ -172,13 +187,16 @@ export function StatsOnlyOverlay({
     if (theme === "futuristic" && layout === "horizontal") {
         return (
             <div className="futuristic-stats-overlay">
-                <div className="bg-gradient-to-r from-black/90 via-black/80 to-black/90 backdrop-blur-sm text-white p-2">
+                <div className="bg-black text-white p-2" style={{ backgroundColor: "#000000" }}>
                     <div className="flex flex-col">
                         <div className="flex items-center justify-between gap-2">
                             {showTitle && (
-                                <div className="flex items-center text-xs font-bold text-primary whitespace-nowrap mr-3">
-                                    <div className="w-1 h-4 bg-primary mr-1.5 animate-pulse"></div>
-                                    ExoGP {timeRangeLabel} <span className="ml-1 text-white/80">LEADERBOARD</span>
+                                <div className="flex flex-col mr-3">
+                                    <div className="flex items-center text-xs font-bold text-primary whitespace-nowrap">
+                                        <div className="w-1 h-4 bg-primary mr-1.5 animate-pulse"></div>
+                                        ExoGP {timeRangeLabel} <span className="ml-1 text-white/80">LEADERBOARD</span>
+                                    </div>
+                                    <div className="text-[10px] text-white/60 mt-0.5 ml-2.5">{modeLabel}</div>
                                 </div>
                             )}
 
@@ -230,10 +248,12 @@ export function StatsOnlyOverlay({
 
                         {/* Referral URL */}
                         <div className="flex items-center justify-center mt-1 text-[10px]">
-                            <div className="flex items-center bg-black/40 px-2 py-0.5 border-l border-r border-primary/30">
-                                <span className="text-primary/90 font-semibold mr-1">JOIN US:</span>
+                            <div className="flex items-center bg-black px-4 py-0.5 relative" style={{ backgroundColor: "#000000" }}>
+                                <div className="w-1 h-4 bg-red-500 animate-pulse absolute left-0"></div>
+                                <div className="w-1 h-4 bg-red-500 animate-pulse absolute right-0"></div>
+                                <span className="text-red-500 font-semibold mr-1">JOIN US:</span>
                                 <span className="font-mono">{referralUrl}</span>
-                                <ExternalLink className="ml-1 h-2.5 w-2.5 text-primary/70" />
+                                <ExternalLink className="ml-1 h-2.5 w-2.5 text-red-500/70" />
                             </div>
                         </div>
                     </div>
@@ -246,11 +266,14 @@ export function StatsOnlyOverlay({
     if (theme === "futuristic" && layout === "vertical") {
         return (
             <div className="futuristic-stats-overlay" style={{ width: "fit-content" }}>
-                <div className="bg-gradient-to-b from-black/90 via-black/80 to-black/90 backdrop-blur-sm text-white p-3">
+                <div className="bg-black text-white p-3" style={{ backgroundColor: "#000000" }}>
                     {showTitle && (
-                        <div className="flex items-center justify-center text-xs font-bold text-primary whitespace-nowrap mb-3">
-                            <div className="w-4 h-1 bg-primary mr-1.5 animate-pulse"></div>
-                            ExoGP {timeRangeLabel} <span className="ml-1 text-white/80">LEADERBOARD</span>
+                        <div className="flex flex-col items-center justify-center mb-3">
+                            <div className="flex items-center text-xs font-bold text-primary whitespace-nowrap">
+                                <div className="w-1 h-4 bg-primary mr-1.5 animate-pulse"></div>
+                                ExoGP {timeRangeLabel} <span className="ml-1 text-white/80">LEADERBOARD</span>
+                            </div>
+                            <div className="text-[10px] text-white/60 mt-0.5">{modeLabel}</div>
                         </div>
                     )}
 
@@ -260,13 +283,13 @@ export function StatsOnlyOverlay({
                             <div className="stat-value font-mono font-bold">
                                 {rankedTracks}/{results.length}
                             </div>
-                            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-primary/30 to-transparent mt-1"></div>
+                            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-red-500/20 to-transparent mt-1"></div>
                         </div>
 
                         <div className="stat-item">
                             <div className="stat-label text-[10px] text-primary/80 uppercase tracking-wider mb-0.5">Avg</div>
                             <div className="stat-value font-mono font-bold">{averageRank}</div>
-                            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-primary/30 to-transparent mt-1"></div>
+                            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-red-500/20 to-transparent mt-1"></div>
                         </div>
 
                         <div className="stat-item">
@@ -284,7 +307,7 @@ export function StatsOnlyOverlay({
                                     "-"
                                 )}
                             </div>
-                            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-primary/30 to-transparent mt-1"></div>
+                            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-red-500/20 to-transparent mt-1"></div>
                         </div>
 
                         <div className="stat-item">
@@ -302,11 +325,13 @@ export function StatsOnlyOverlay({
                         </div>
 
                         {/* Referral URL */}
-                        <div className="mt-2 pt-2 border-t border-primary/30">
-                            <div className="stat-label text-[10px] text-primary/80 uppercase tracking-wider mb-0.5">Join Us</div>
+                        <div className="mt-2 pt-2 border-t border-red-500/20 relative px-4">
+                            <div className="w-1 h-4 bg-red-500 animate-pulse absolute left-0 top-2"></div>
+                            <div className="w-1 h-4 bg-red-500 animate-pulse absolute right-0 top-2"></div>
+                            <div className="stat-label text-[10px] text-red-500 uppercase tracking-wider mb-0.5">Join Us</div>
                             <div className="stat-value font-mono text-[9px] flex items-center">
                                 {referralUrl}
-                                <ExternalLink className="ml-1 h-2.5 w-2.5 text-primary/70" />
+                                <ExternalLink className="ml-1 h-2.5 w-2.5 text-red-500/70" />
                             </div>
                         </div>
                     </div>
@@ -318,11 +343,14 @@ export function StatsOnlyOverlay({
     // Default Horizontal layout (fallback)
     if (layout === "horizontal") {
         return (
-            <div className="stats-overlay bg-black/80 text-white p-2">
+            <div className="stats-overlay bg-black text-white p-2" style={{ backgroundColor: "#000000" }}>
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
                     {showTitle && (
-                        <div className="text-xs font-semibold text-primary whitespace-nowrap">
-                            ExoGP {timeRangeLabel} Leaderboard
+                        <div className="flex flex-col">
+                            <div className="flex items-center text-xs font-semibold text-primary whitespace-nowrap">
+                                ExoGP {timeRangeLabel} Leaderboard
+                            </div>
+                            <div className="text-[10px] text-white/60 mt-0.5">{modeLabel}</div>
                         </div>
                     )}
 
@@ -371,9 +399,12 @@ export function StatsOnlyOverlay({
 
     // Default Vertical layout (fallback)
     return (
-        <div className="stats-overlay bg-black/80 text-white p-2" style={{ width: "fit-content" }}>
+        <div className="stats-overlay bg-black text-white p-2" style={{ backgroundColor: "#000000", width: "fit-content" }}>
             {showTitle && (
-                <div className="text-xs font-semibold text-primary text-center mb-2">ExoGP {timeRangeLabel} Leaderboard</div>
+                <div className="flex flex-col mb-2">
+                    <div className="text-xs font-semibold text-primary text-center">ExoGP {timeRangeLabel} Leaderboard</div>
+                    <div className="text-[10px] text-white/60 mt-0.5 text-center">{modeLabel}</div>
+                </div>
             )}
 
             <div className="grid grid-cols-1 gap-1 text-xs">
@@ -409,7 +440,7 @@ export function StatsOnlyOverlay({
                 </div>
 
                 {/* Referral URL */}
-                <div className="mt-1 pt-1 border-t border-muted/20">
+                <div className="mt-1 pt-1 border-t border-red-500/20">
                     <span className="text-muted-foreground text-[9px]">Join us: {referralUrl}</span>
                 </div>
             </div>

@@ -39,7 +39,7 @@ export default function StatsPage() {
                     referralCode={referralCode}
                 />
             ) : (
-                <div className="p-4 text-center text-white bg-black/80 rounded-lg">
+                <div className="p-4 text-center text-white bg-black rounded-lg">
                     <p>Please provide a player name using the ?player= query parameter</p>
                 </div>
             )}

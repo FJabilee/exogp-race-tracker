@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { StreamOverlay } from "@/components/stream-overlay"
 import { StatsOnlyOverlay } from "@/components/stats-only-overlay"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -173,6 +174,19 @@ export default function StreamPage() {
                                             />
                                         </div>
 
+                                        <div>
+                                            <Label htmlFor="theme">Theme</Label>
+                                            <Select value={theme} onValueChange={(value: "default" | "futuristic") => setTheme(value)}>
+                                                <SelectTrigger id="theme">
+                                                    <SelectValue placeholder="Select theme" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="default">Default</SelectItem>
+                                                    <SelectItem value="futuristic">Futuristic</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
                                         <div className="flex items-center space-x-2 pt-4">
                                             <Switch id="showOnlyRanked" checked={showOnlyRanked} onCheckedChange={setShowOnlyRanked} />
                                             <Label htmlFor="showOnlyRanked">Show only ranked tracks</Label>
@@ -223,7 +237,7 @@ export default function StreamPage() {
                                 <p className="text-sm text-muted-foreground mb-2">Stream URL (OBS Browser Source):</p>
                                 <div className="bg-muted p-2 rounded text-xs break-all">
                                     {typeof window !== "undefined"
-                                        ? `${window.location.origin}/stream/embed?player=${encodeURIComponent(playerName)}&refresh=${refreshInterval}&rotate=${rotationInterval}&tracksPerPage=${tracksPerPage}&ranked=${showOnlyRanked}&timeRange=${timeRange}&region=${region}&mode=${encodeURIComponent(mode)}`
+                                        ? `${window.location.origin}/stream/embed?player=${encodeURIComponent(playerName)}&refresh=${refreshInterval}&rotate=${rotationInterval}&tracksPerPage=${tracksPerPage}&ranked=${showOnlyRanked}&timeRange=${timeRange}&region=${region}&mode=${encodeURIComponent(mode)}&theme=${theme}&referral=${referralCode}`
                                         : ""}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-2">Recommended size: 600px width, 400px height</p>
@@ -250,17 +264,32 @@ export default function StreamPage() {
 
             <div className={`${configuredPlayer ? "" : "opacity-50"}`}>
                 {configuredPlayer ? (
-                    <StatsOnlyOverlay
-                        playerName={configuredPlayer}
-                        refreshInterval={refreshInterval}
-                        timeRange={timeRange}
-                        region={region}
-                        mode={mode}
-                        layout={statsLayout}
-                        showTitle={showTitle}
-                        theme={theme}
-                        referralCode={referralCode}
-                    />
+                    activeTab === "full" ? (
+                        <StreamOverlay
+                            playerName={configuredPlayer}
+                            refreshInterval={refreshInterval}
+                            rotationInterval={rotationInterval}
+                            tracksPerPage={tracksPerPage}
+                            showOnlyRanked={showOnlyRanked}
+                            timeRange={timeRange}
+                            region={region}
+                            mode={mode}
+                            theme={theme}
+                            referralCode={referralCode}
+                        />
+                    ) : (
+                        <StatsOnlyOverlay
+                            playerName={configuredPlayer}
+                            refreshInterval={refreshInterval}
+                            timeRange={timeRange}
+                            region={region}
+                            mode={mode}
+                            layout={statsLayout}
+                            showTitle={showTitle}
+                            theme={theme}
+                            referralCode={referralCode}
+                        />
+                    )
                 ) : (
                     <div className="bg-card p-8 rounded-lg text-center">
                         <p>Enter a player name and click Apply to see the stream overlay</p>
