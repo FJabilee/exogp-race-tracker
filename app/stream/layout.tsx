@@ -1,0 +1,16 @@
+import type React from "react"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+    title: "ExoGP Stream Overlay",
+    description: "Stream overlay for ExoGP race performance",
+}
+
+export default function StreamLayout({
+    children,
+}: Readonly<{
+    children: React.ReactNode
+}>) {
+    return <div className="min-h-screen">{children}</div>
+}
+
