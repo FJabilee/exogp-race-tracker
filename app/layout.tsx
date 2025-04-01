@@ -9,6 +9,11 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "ExoGP Leaderboards | Track Race Performance",
   description: "Track your race times across all tracks and compare with the best players in ExoGP",
+  icons: {
+    icon: "/atmos.svg",
+    shortcut: "/atmos.svg",
+    apple: "/atmos.svg",
+  },
 }
 
 export default function RootLayout({

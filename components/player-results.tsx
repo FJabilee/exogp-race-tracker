@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trophy, Loader2 } from "lucide-react"
+import { Trophy, Loader2, Coins } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { PlayerTrackResult } from "./player-dashboard"
 
@@ -31,6 +31,14 @@ const formatTimeDiff = (playerTime: number | null, bestTime: number | null) => {
     return `+${seconds}.${milliseconds.toString().padStart(3, "0")}`
 }
 
+// Format rewards with FLEX currency
+const formatRewards = (rewards: number | null) => {
+    if (rewards === null) return "-"
+    if (rewards === 0) return "0"
+
+    return `${rewards.toLocaleString()} FLEX`
+}
+
 export function PlayerResults({ playerName, results }: PlayerResultsProps) {
     // Count tracks where player is ranked
     const rankedTracks = results.filter((result) => result.playerRank !== null).length
@@ -50,9 +58,14 @@ export function PlayerResults({ playerName, results }: PlayerResultsProps) {
         null as number | null,
     )
 
+    // Calculate total rewards
+    const totalRewards = results.reduce((sum, result) => {
+        return result.rewards ? sum + result.rewards : sum
+    }, 0)
+
     return (
         <div className="space-y-8">
-            <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto text-center">
+            <div className="grid grid-cols-4 gap-8 max-w-2xl mx-auto text-center">
                 <div>
                     <div className="text-sm text-muted-foreground mb-1">Tracks Ranked</div>
                     <div className="text-2xl">
@@ -83,6 +96,19 @@ export function PlayerResults({ playerName, results }: PlayerResultsProps) {
                         )}
                     </div>
                 </div>
+
+                <div>
+                    <div className="text-sm text-muted-foreground mb-1">Total Rewards</div>
+                    <div className="text-2xl flex items-center justify-center">
+                        {totalRewards > 0 ? (
+                            <>
+                                {totalRewards.toLocaleString()} <Coins className="ml-1 h-5 w-5 text-yellow-500" />
+                            </>
+                        ) : (
+                            "-"
+                        )}
+                    </div>
+                </div>
             </div>
 
             <div>
@@ -95,6 +121,7 @@ export function PlayerResults({ playerName, results }: PlayerResultsProps) {
                             <TableHead className="font-medium">Time to Beat</TableHead>
                             <TableHead className="font-medium">Gap</TableHead>
                             <TableHead className="hidden md:table-cell font-medium">Best Player</TableHead>
+                            <TableHead className="text-right font-medium">Rewards</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -115,7 +142,7 @@ export function PlayerResults({ playerName, results }: PlayerResultsProps) {
                                                     <span className="text-muted-foreground text-sm">DNR</span>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    <p>Did not race or not in top 20</p>
+                                                    <p>Did not race or not in top 50</p>
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
@@ -155,6 +182,18 @@ export function PlayerResults({ playerName, results }: PlayerResultsProps) {
                                             {result.bestPlayer.toLowerCase() === playerName.toLowerCase() && (
                                                 <Trophy className="ml-1 h-4 w-4 text-yellow-500" />
                                             )}
+                                        </span>
+                                    ) : (
+                                        "-"
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    {result.loading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin ml-auto" />
+                                    ) : result.rewards ? (
+                                        <span className="flex items-center justify-end text-sm font-medium text-yellow-500">
+                                            {formatRewards(result.rewards)}
+                                            <Coins className="ml-1 h-4 w-4" />
                                         </span>
                                     ) : (
                                         "-"

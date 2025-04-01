@@ -24,7 +24,21 @@ export type PlayerTrackResult = {
     playerTime: number | null
     bestPlayer: string | null
     bestTime: number | null
+    rewards: number | null
     loading: boolean
+}
+
+// Function to calculate rewards based on rank
+export function calculateRewards(rank: number | null): number | null {
+    if (rank === null) return null
+
+    if (rank === 1) return 10000
+    if (rank === 2) return 8000
+    if (rank === 3) return 6000
+    if (rank >= 4 && rank <= 10) return 4000
+    if (rank >= 11 && rank <= 50) return 2000
+
+    return 0 // No rewards for ranks beyond 50th
 }
 
 export function PlayerDashboard() {
@@ -101,6 +115,7 @@ export function PlayerDashboard() {
             playerTime: null,
             bestPlayer: null,
             bestTime: null,
+            rewards: null,
             loading: true,
         }))
 
@@ -155,10 +170,10 @@ export function PlayerDashboard() {
         const updatedResults = await Promise.all(
             trackOptions.map(async (track, index) => {
                 try {
-                    // Fetch top 20 players for this track
+                    // Fetch top 50 players for this track
                     // Only add serverId parameter if region is not "all"
                     const regionParam = region !== "all" ? `&serverId=${region}` : ""
-                    const url = `https://leaderboards.planetatmos.com/api/leaderboard/tracks/${track.value}?page=0&perPage=20&distinctOnUser=true&mode=${mode}${regionParam}&startDate=${startDate}&endDate=${endDate}&track=${track.value}`
+                    const url = `https://leaderboards.planetatmos.com/api/leaderboard/tracks/${track.value}?page=0&perPage=50&distinctOnUser=true&mode=${mode}${regionParam}&startDate=${startDate}&endDate=${endDate}&track=${track.value}`
 
                     const response = await fetch(url)
                     const data = await response.json()
@@ -171,13 +186,18 @@ export function PlayerDashboard() {
                     // Get the best player (first in the list)
                     const bestResult = data.items[0]
 
+                    // Calculate player rank and rewards
+                    const playerRank = playerResult ? data.items.indexOf(playerResult) + 1 : null
+                    const rewards = calculateRewards(playerRank)
+
                     return {
                         trackId: track.value,
                         trackName: track.label,
-                        playerRank: playerResult ? data.items.indexOf(playerResult) + 1 : null,
+                        playerRank: playerRank,
                         playerTime: playerResult ? playerResult.time : null,
                         bestPlayer: bestResult ? bestResult.player : null,
                         bestTime: bestResult ? bestResult.time : null,
+                        rewards: rewards,
                         loading: false,
                     }
                 } catch (error) {
@@ -221,7 +241,7 @@ export function PlayerDashboard() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="EMatchMode::TimeTrials">Time Trials</SelectItem>
-                                        <SelectItem value="EMatchMode::Matchmaking_Unranked">Quickplay</SelectItem>
+                                        <SelectItem value="EMatchMode::InvalidRaceMode">Quickplay</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
