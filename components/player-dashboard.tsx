@@ -241,7 +241,7 @@ export function PlayerDashboard() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="EMatchMode::TimeTrials">Time Trials</SelectItem>
-                                        <SelectItem value="EMatchMode::InvalidRaceMode">Quickplay</SelectItem>
+                                        <SelectItem value="EMatchMode::Matchmaking_Unranked">Quickplay</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
