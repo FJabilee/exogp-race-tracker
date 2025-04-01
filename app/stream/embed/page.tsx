@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { StreamOverlay } from "@/components/stream-overlay"
 
-export default function EmbedPage() {
+// Client component that uses useSearchParams
+function EmbedContent() {
     const searchParams = useSearchParams()
     const playerName = searchParams.get("player") || ""
     const refreshInterval = Number.parseInt(searchParams.get("refresh") || "300") // 5 minutes default
@@ -48,6 +49,25 @@ export default function EmbedPage() {
                 </div>
             )}
         </div>
+    )
+}
+
+// Loading fallback
+function EmbedLoading() {
+    return (
+        <div className="stream-embed">
+            <div className="p-4 text-center text-white bg-black rounded-lg" style={{ backgroundColor: "#000000" }}>
+                <p>Loading...</p>
+            </div>
+        </div>
+    )
+}
+
+export default function EmbedPage() {
+    return (
+        <Suspense fallback={<EmbedLoading />}>
+            <EmbedContent />
+        </Suspense>
     )
 }
 

@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { StatsOnlyOverlay } from "@/components/stats-only-overlay"
 
-export default function StatsPage() {
+// Client component that uses useSearchParams
+function StatsContent() {
     const searchParams = useSearchParams()
     const playerName = searchParams.get("player") || ""
     const refreshInterval = Number.parseInt(searchParams.get("refresh") || "300") // 5 minutes default
@@ -39,11 +40,30 @@ export default function StatsPage() {
                     referralCode={referralCode}
                 />
             ) : (
-                <div className="p-4 text-center text-white bg-black rounded-lg">
+                <div className="p-4 text-center text-white bg-black rounded-lg" style={{ backgroundColor: "#000000" }}>
                     <p>Please provide a player name using the ?player= query parameter</p>
                 </div>
             )}
         </div>
+    )
+}
+
+// Loading fallback
+function StatsLoading() {
+    return (
+        <div className="stream-embed">
+            <div className="p-4 text-center text-white bg-black rounded-lg" style={{ backgroundColor: "#000000" }}>
+                <p>Loading...</p>
+            </div>
+        </div>
+    )
+}
+
+export default function StatsPage() {
+    return (
+        <Suspense fallback={<StatsLoading />}>
+            <StatsContent />
+        </Suspense>
     )
 }
 
