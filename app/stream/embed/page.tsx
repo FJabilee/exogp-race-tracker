@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { StreamOverlay } from "@/components/stream-overlay"
 
-export default function EmbedPage() {
+// Component that uses search params
+function StreamContent() {
     const searchParams = useSearchParams()
     const playerName = searchParams.get("player") || ""
     const refreshInterval = Number.parseInt(searchParams.get("refresh") || "300") // 5 minutes default
@@ -16,14 +17,6 @@ export default function EmbedPage() {
     const mode = searchParams.get("mode") || "EMatchMode::TimeTrials"
     const theme = (searchParams.get("theme") || "default") as "default" | "futuristic"
     const referralCode = searchParams.get("referral") || "za9gX8PY" // Default referral code
-
-    // This ensures the component is only rendered on the client
-    const [mounted, setMounted] = useState(false)
-    useEffect(() => {
-        setMounted(true)
-    }, [])
-
-    if (!mounted) return null
 
     return (
         <div className="stream-embed">
@@ -51,3 +44,19 @@ export default function EmbedPage() {
     )
 }
 
+// Main page component with suspense boundary
+export default function EmbedPage() {
+    // This ensures the component is only rendered on the client
+    const [mounted, setMounted] = useState(false)
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!mounted) return null
+
+    return (
+        <Suspense fallback={<div className="p-4 text-center text-white bg-black">Loading...</div>}>
+            <StreamContent />
+        </Suspense>
+    )
+}
