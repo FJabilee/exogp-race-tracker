@@ -25,6 +25,8 @@ export type PlayerTrackResult = {
     bestPlayer: string | null
     bestTime: number | null
     rewards: number | null
+    weeklyRank: number | null // Add weekly rank field
+    weeklyRewards: number | null // Add weekly rewards field
     loading: boolean
 }
 
@@ -39,6 +41,36 @@ export function calculateRewards(rank: number | null): number | null {
     if (rank >= 11 && rank <= 50) return 2000
 
     return 0 // No rewards for ranks beyond 50th
+}
+
+// Add new function to calculate weekly rewards based on rank
+export function calculateWeeklyRewards(rank: number | null): number | null {
+    if (rank === null) return null
+
+    if (rank === 1) return 1000
+    if (rank === 2) return 800
+    if (rank === 3) return 600
+    if (rank >= 4 && rank <= 10) return 400
+    if (rank >= 11 && rank <= 50) return 200
+
+    return 0 // No rewards for ranks beyond 50th
+}
+
+// Helper function to get the current week's start and end dates
+export function getCurrentWeekDates() {
+    const now = new Date()
+    const startOfWeek = new Date(now)
+
+    // Set to the beginning of the current week (Sunday)
+    const day = startOfWeek.getDay() // 0 = Sunday, 1 = Monday, etc.
+    startOfWeek.setDate(startOfWeek.getDate() - day) // Go back to Sunday
+    startOfWeek.setHours(0, 0, 0, 0) // Set to beginning of day
+
+    // End date is current time
+    return {
+        startDate: startOfWeek.toISOString(),
+        endDate: now.toISOString(),
+    }
 }
 
 export function PlayerDashboard() {
@@ -116,6 +148,8 @@ export function PlayerDashboard() {
             bestPlayer: null,
             bestTime: null,
             rewards: null,
+            weeklyRank: null,
+            weeklyRewards: null,
             loading: true,
         }))
 
@@ -166,20 +200,34 @@ export function PlayerDashboard() {
             }
         }
 
+        // Get current week dates for weekly rewards
+        const weeklyDateRange = getCurrentWeekDates()
+
         // Fetch data for each track
         const updatedResults = await Promise.all(
             trackOptions.map(async (track, index) => {
                 try {
-                    // Fetch top 50 players for this track
+                    // Fetch top 50 players for this track for the selected time range
                     // Only add serverId parameter if region is not "all"
                     const regionParam = region !== "all" ? `&serverId=${region}` : ""
                     const url = `https://leaderboards.planetatmos.com/api/leaderboard/tracks/${track.value}?page=0&perPage=50&distinctOnUser=true&mode=${mode}${regionParam}&startDate=${startDate}&endDate=${endDate}&track=${track.value}`
 
-                    const response = await fetch(url)
+                    // Fetch weekly data separately
+                    const weeklyUrl = `https://leaderboards.planetatmos.com/api/leaderboard/tracks/${track.value}?page=0&perPage=50&distinctOnUser=true&mode=${mode}${regionParam}&startDate=${weeklyDateRange.startDate}&endDate=${weeklyDateRange.endDate}&track=${track.value}`
+
+                    // Make both requests in parallel
+                    const [response, weeklyResponse] = await Promise.all([fetch(url), fetch(weeklyUrl)])
+
                     const data = await response.json()
+                    const weeklyData = await weeklyResponse.json()
 
                     // Find the player in the results
                     const playerResult = data.items.find(
+                        (item: LeaderboardItem) => item.player.toLowerCase() === playerName.toLowerCase(),
+                    )
+
+                    // Find the player in the weekly results
+                    const weeklyPlayerResult = weeklyData.items.find(
                         (item: LeaderboardItem) => item.player.toLowerCase() === playerName.toLowerCase(),
                     )
 
@@ -190,6 +238,10 @@ export function PlayerDashboard() {
                     const playerRank = playerResult ? data.items.indexOf(playerResult) + 1 : null
                     const rewards = calculateRewards(playerRank)
 
+                    // Calculate weekly rank and rewards
+                    const weeklyRank = weeklyPlayerResult ? weeklyData.items.indexOf(weeklyPlayerResult) + 1 : null
+                    const weeklyRewards = calculateWeeklyRewards(weeklyRank)
+
                     return {
                         trackId: track.value,
                         trackName: track.label,
@@ -198,6 +250,8 @@ export function PlayerDashboard() {
                         bestPlayer: bestResult ? bestResult.player : null,
                         bestTime: bestResult ? bestResult.time : null,
                         rewards: rewards,
+                        weeklyRank: weeklyRank,
+                        weeklyRewards: weeklyRewards,
                         loading: false,
                     }
                 } catch (error) {
@@ -350,4 +404,3 @@ export function PlayerDashboard() {
         </div>
     )
 }
-

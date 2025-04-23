@@ -3,7 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Loader2, Trophy, ExternalLink } from "lucide-react"
 import { trackOptions, timeRangeOptions } from "./track-options"
-import { calculateRewards, type PlayerTrackResult } from "./player-dashboard"
+import {
+    calculateRewards,
+    calculateWeeklyRewards,
+    getCurrentWeekDates,
+    type PlayerTrackResult,
+} from "./player-dashboard"
 
 interface StreamOverlayProps {
     playerName: string
@@ -104,6 +109,8 @@ export function StreamOverlay({
             bestPlayer: null,
             bestTime: null,
             rewards: null,
+            weeklyRank: null,
+            weeklyRewards: null,
             loading: true,
         }))
 
@@ -132,20 +139,34 @@ export function StreamOverlay({
             endDate = timeRangeOptions[0].endDate
         }
 
+        // Get current week dates for weekly rewards
+        const weeklyDateRange = getCurrentWeekDates()
+
         // Fetch data for each track
         const updatedResults = await Promise.all(
             trackOptions.map(async (track, index) => {
                 try {
-                    // Fetch top 50 players for this track
+                    // Fetch top 50 players for this track for the selected time range
                     // Only add serverId parameter if region is not "all"
                     const regionParam = region !== "all" ? `&serverId=${region}` : ""
                     const url = `https://leaderboards.planetatmos.com/api/leaderboard/tracks/${track.value}?page=0&perPage=50&distinctOnUser=true&mode=${mode}${regionParam}&startDate=${startDate}&endDate=${endDate}&track=${track.value}`
 
-                    const response = await fetch(url)
+                    // Fetch weekly data separately
+                    const weeklyUrl = `https://leaderboards.planetatmos.com/api/leaderboard/tracks/${track.value}?page=0&perPage=50&distinctOnUser=true&mode=${mode}${regionParam}&startDate=${weeklyDateRange.startDate}&endDate=${weeklyDateRange.endDate}&track=${track.value}`
+
+                    // Make both requests in parallel
+                    const [response, weeklyResponse] = await Promise.all([fetch(url), fetch(weeklyUrl)])
+
                     const data = await response.json()
+                    const weeklyData = await weeklyResponse.json()
 
                     // Find the player in the results
                     const playerResult = data.items.find(
+                        (item: { player: string; time: number }) => item.player.toLowerCase() === playerName.toLowerCase(),
+                    )
+
+                    // Find the player in the weekly results
+                    const weeklyPlayerResult = weeklyData.items.find(
                         (item: { player: string; time: number }) => item.player.toLowerCase() === playerName.toLowerCase(),
                     )
 
@@ -156,6 +177,10 @@ export function StreamOverlay({
                     const playerRank = playerResult ? data.items.indexOf(playerResult) + 1 : null
                     const rewards = calculateRewards(playerRank)
 
+                    // Calculate weekly rank and rewards
+                    const weeklyRank = weeklyPlayerResult ? weeklyData.items.indexOf(weeklyPlayerResult) + 1 : null
+                    const weeklyRewards = calculateWeeklyRewards(weeklyRank)
+
                     return {
                         trackId: track.value,
                         trackName: track.label,
@@ -164,6 +189,8 @@ export function StreamOverlay({
                         bestPlayer: bestResult ? bestResult.player : null,
                         bestTime: bestResult ? bestResult.time : null,
                         rewards: rewards,
+                        weeklyRank: weeklyRank,
+                        weeklyRewards: weeklyRewards,
                         loading: false,
                     }
                 } catch (error) {
@@ -269,6 +296,7 @@ export function StreamOverlay({
         updateDisplayedResults()
     }, [updateDisplayedResults])
 
+    // Remove the unused weeklyRankedTracks variable
     // Count tracks where player is ranked
     const rankedTracks = results.filter((result) => result.playerRank !== null).length
 
@@ -288,9 +316,17 @@ export function StreamOverlay({
     )
 
     // Calculate total rewards
-    const totalRewards = results.reduce((sum, result) => {
+    const totalSeasonalRewards = results.reduce((sum, result) => {
         return result.rewards ? sum + result.rewards : sum
     }, 0)
+
+    // Calculate total weekly rewards
+    const totalWeeklyRewards = results.reduce((sum, result) => {
+        return result.weeklyRewards ? sum + result.weeklyRewards : sum
+    }, 0)
+
+    // Calculate combined total rewards
+    const totalRewards = totalSeasonalRewards + totalWeeklyRewards
 
     return (
         <div
@@ -313,7 +349,7 @@ export function StreamOverlay({
 
             {/* Stats Row - Centered */}
             <div
-                className="flex justify-center items-center text-xs mb-1 px-1 space-x-6"
+                className="flex justify-center items-center text-xs mb-1 px-1 space-x-4"
                 style={{ backgroundColor: "#000000" }}
             >
                 <div>
@@ -343,8 +379,20 @@ export function StreamOverlay({
                     </span>
                 </div>
                 <div>
-                    <span className="text-muted-foreground mr-1">Rewards:</span>
-                    <span className="font-medium">{totalRewards > 0 ? totalRewards.toLocaleString() : "-"}</span>
+                    <span className="text-muted-foreground mr-1">Seasonal FLEX:</span>
+                    <span className="font-medium text-yellow-500">
+                        {totalSeasonalRewards > 0 ? totalSeasonalRewards.toLocaleString() : "-"}
+                    </span>
+                </div>
+                <div>
+                    <span className="text-muted-foreground mr-1">Weekly FLEX:</span>
+                    <span className="font-medium text-green-500">
+                        {totalWeeklyRewards > 0 ? totalWeeklyRewards.toLocaleString() : "-"}
+                    </span>
+                </div>
+                <div>
+                    <span className="text-muted-foreground mr-1">Total FLEX:</span>
+                    <span className="font-medium text-primary">{totalRewards > 0 ? totalRewards.toLocaleString() : "-"}</span>
                 </div>
             </div>
 
@@ -384,8 +432,8 @@ export function StreamOverlay({
                             >
                                 <th className="text-left py-1 px-2 font-medium">Track</th>
                                 <th className="w-10 text-center py-1 px-1 font-medium">#</th>
+                                <th className="w-10 text-center py-1 px-1 font-medium">Wk</th>
                                 <th className="text-left py-1 px-2 font-medium">Your Time</th>
-                                <th className="text-left py-1 px-2 font-medium">Best Time</th>
                                 <th className="text-left py-1 px-2 font-medium">Gap</th>
                             </tr>
                         </thead>
@@ -408,11 +456,19 @@ export function StreamOverlay({
                                             <span className="text-muted-foreground">-</span>
                                         )}
                                     </td>
-                                    <td className="py-1 px-2">
-                                        <span className="font-mono text-[11px]">{formatTime(result.playerTime)}</span>
+                                    <td className="text-center py-1 px-1">
+                                        {result.loading ? (
+                                            <Loader2 className="h-3 w-3 animate-spin mx-auto" />
+                                        ) : result.weeklyRank ? (
+                                            <span className={result.weeklyRank === 1 ? "text-green-500 font-semibold" : ""}>
+                                                {result.weeklyRank}
+                                            </span>
+                                        ) : (
+                                            <span className="text-muted-foreground">-</span>
+                                        )}
                                     </td>
                                     <td className="py-1 px-2">
-                                        <span className="font-mono text-[11px]">{formatTime(result.bestTime)}</span>
+                                        <span className="font-mono text-[11px]">{formatTime(result.playerTime)}</span>
                                     </td>
                                     <td className="py-1 px-2">
                                         {result.playerTime && result.bestTime ? (
@@ -434,4 +490,3 @@ export function StreamOverlay({
         </div>
     )
 }
-

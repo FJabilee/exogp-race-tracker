@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trophy, Loader2, Coins } from "lucide-react"
+import { Trophy, Loader2 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { PlayerTrackResult } from "./player-dashboard"
 
@@ -40,6 +40,7 @@ const formatRewards = (rewards: number | null) => {
 }
 
 export function PlayerResults({ playerName, results }: PlayerResultsProps) {
+    // Remove the unused weeklyRankedTracks variable
     // Count tracks where player is ranked
     const rankedTracks = results.filter((result) => result.playerRank !== null).length
 
@@ -58,14 +59,22 @@ export function PlayerResults({ playerName, results }: PlayerResultsProps) {
         null as number | null,
     )
 
-    // Calculate total rewards
-    const totalRewards = results.reduce((sum, result) => {
+    // Calculate total seasonal rewards
+    const totalSeasonalRewards = results.reduce((sum, result) => {
         return result.rewards ? sum + result.rewards : sum
     }, 0)
 
+    // Calculate total weekly rewards
+    const totalWeeklyRewards = results.reduce((sum, result) => {
+        return result.weeklyRewards ? sum + result.weeklyRewards : sum
+    }, 0)
+
+    // Calculate combined total rewards
+    const totalRewards = totalSeasonalRewards + totalWeeklyRewards
+
     return (
         <div className="space-y-8">
-            <div className="grid grid-cols-4 gap-8 max-w-2xl mx-auto text-center">
+            <div className="grid grid-cols-6 gap-8 max-w-2xl mx-auto text-center">
                 <div>
                     <div className="text-sm text-muted-foreground mb-1">Tracks Ranked</div>
                     <div className="text-2xl">
@@ -98,16 +107,22 @@ export function PlayerResults({ playerName, results }: PlayerResultsProps) {
                 </div>
 
                 <div>
-                    <div className="text-sm text-muted-foreground mb-1">Total Rewards</div>
-                    <div className="text-2xl flex items-center justify-center">
-                        {totalRewards > 0 ? (
-                            <>
-                                {totalRewards.toLocaleString()} <Coins className="ml-1 h-5 w-5 text-yellow-500" />
-                            </>
-                        ) : (
-                            "-"
-                        )}
+                    <div className="text-sm text-muted-foreground mb-1">Seasonal FLEX</div>
+                    <div className="text-2xl text-yellow-500">
+                        {totalSeasonalRewards > 0 ? totalSeasonalRewards.toLocaleString() : "-"}
                     </div>
+                </div>
+
+                <div>
+                    <div className="text-sm text-muted-foreground mb-1">Weekly FLEX</div>
+                    <div className="text-2xl text-green-500">
+                        {totalWeeklyRewards > 0 ? totalWeeklyRewards.toLocaleString() : "-"}
+                    </div>
+                </div>
+
+                <div>
+                    <div className="text-sm text-muted-foreground mb-1">Total FLEX</div>
+                    <div className="text-2xl text-primary">{totalRewards > 0 ? totalRewards.toLocaleString() : "-"}</div>
                 </div>
             </div>
 
@@ -117,11 +132,13 @@ export function PlayerResults({ playerName, results }: PlayerResultsProps) {
                         <TableRow className="border-b border-muted/20">
                             <TableHead className="font-medium">Track</TableHead>
                             <TableHead className="w-16 text-center font-medium">Rank</TableHead>
+                            <TableHead className="w-16 text-center font-medium">Weekly</TableHead>
                             <TableHead className="font-medium">Your Time</TableHead>
                             <TableHead className="font-medium">Time to Beat</TableHead>
                             <TableHead className="font-medium">Gap</TableHead>
                             <TableHead className="hidden md:table-cell font-medium">Best Player</TableHead>
-                            <TableHead className="text-right font-medium">Rewards</TableHead>
+                            <TableHead className="text-right font-medium">Seasonal</TableHead>
+                            <TableHead className="text-right font-medium">Weekly</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -143,6 +160,26 @@ export function PlayerResults({ playerName, results }: PlayerResultsProps) {
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     <p>Did not race or not in top 50</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    {result.loading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                                    ) : result.weeklyRank ? (
+                                        <span className={result.weeklyRank === 1 ? "text-green-500 font-semibold" : ""}>
+                                            {result.weeklyRank}
+                                        </span>
+                                    ) : (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <span className="text-muted-foreground text-sm">DNR</span>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Did not race this week or not in top 50</p>
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
@@ -191,10 +228,16 @@ export function PlayerResults({ playerName, results }: PlayerResultsProps) {
                                     {result.loading ? (
                                         <Loader2 className="h-4 w-4 animate-spin ml-auto" />
                                     ) : result.rewards ? (
-                                        <span className="flex items-center justify-end text-sm font-medium text-yellow-500">
-                                            {formatRewards(result.rewards)}
-                                            <Coins className="ml-1 h-4 w-4" />
-                                        </span>
+                                        <span className="text-sm font-medium text-yellow-500">{formatRewards(result.rewards)}</span>
+                                    ) : (
+                                        "-"
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    {result.loading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin ml-auto" />
+                                    ) : result.weeklyRewards ? (
+                                        <span className="text-sm font-medium text-green-500">{formatRewards(result.weeklyRewards)}</span>
                                     ) : (
                                         "-"
                                     )}
@@ -207,4 +250,3 @@ export function PlayerResults({ playerName, results }: PlayerResultsProps) {
         </div>
     )
 }
-

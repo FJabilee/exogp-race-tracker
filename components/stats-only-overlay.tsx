@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Trophy, Zap, ExternalLink } from "lucide-react"
+import { Trophy, ExternalLink } from "lucide-react"
 import { trackOptions, timeRangeOptions } from "./track-options"
-import { calculateRewards, type PlayerTrackResult } from "./player-dashboard"
+// Add the import for getCurrentWeekDates
+import { calculateRewards, calculateWeeklyRewards, type PlayerTrackResult } from "./player-dashboard"
 
 interface StatsOnlyOverlayProps {
     playerName: string
@@ -32,6 +33,30 @@ const getModeLabel = (value: string): string => {
             return "Quickplay"
         default:
             return "Time Trials"
+    }
+}
+
+// Function to get the current week's start and end dates
+const getCurrentWeekDates = () => {
+    const now = new Date()
+    const dayOfWeek = now.getDay()
+    const startOfWeek = new Date(now)
+    startOfWeek.setDate(now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)) // Adjust to Monday
+
+    const endOfWeek = new Date(startOfWeek)
+    endOfWeek.setDate(startOfWeek.getDate() + 6) // Adjust to Sunday
+
+    // Format dates to 'YYYY-MM-DD'
+    const formatDate = (date: Date) => {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, "0")
+        const day = String(date.getDate()).padStart(2, "0")
+        return `${year}-${month}-${day}`
+    }
+
+    return {
+        startDate: formatDate(startOfWeek),
+        endDate: formatDate(endOfWeek),
     }
 }
 
@@ -72,6 +97,8 @@ export function StatsOnlyOverlay({
             bestPlayer: null,
             bestTime: null,
             rewards: null,
+            weeklyRank: null, // Add missing weeklyRank field
+            weeklyRewards: null,
             loading: true,
         }))
 
@@ -100,20 +127,34 @@ export function StatsOnlyOverlay({
             endDate = timeRangeOptions[0].endDate
         }
 
+        // Get current week dates for weekly rewards
+        const weeklyDateRange = getCurrentWeekDates()
+
         // Fetch data for each track
         const updatedResults = await Promise.all(
             trackOptions.map(async (track, index) => {
                 try {
-                    // Fetch top 50 players for this track
+                    // Fetch top 50 players for this track for the selected time range
                     // Only add serverId parameter if region is not "all"
                     const regionParam = region !== "all" ? `&serverId=${region}` : ""
                     const url = `https://leaderboards.planetatmos.com/api/leaderboard/tracks/${track.value}?page=0&perPage=50&distinctOnUser=true&mode=${mode}${regionParam}&startDate=${startDate}&endDate=${endDate}&track=${track.value}`
 
-                    const response = await fetch(url)
+                    // Fetch weekly data separately
+                    const weeklyUrl = `https://leaderboards.planetatmos.com/api/leaderboard/tracks/${track.value}?page=0&perPage=50&distinctOnUser=true&mode=${mode}${regionParam}&startDate=${weeklyDateRange.startDate}&endDate=${weeklyDateRange.endDate}&track=${track.value}`
+
+                    // Make both requests in parallel
+                    const [response, weeklyResponse] = await Promise.all([fetch(url), fetch(weeklyUrl)])
+
                     const data = await response.json()
+                    const weeklyData = await weeklyResponse.json()
 
                     // Find the player in the results
                     const playerResult = data.items.find(
+                        (item: { player: string; time: number }) => item.player.toLowerCase() === playerName.toLowerCase(),
+                    )
+
+                    // Find the player in the weekly results
+                    const weeklyPlayerResult = weeklyData.items.find(
                         (item: { player: string; time: number }) => item.player.toLowerCase() === playerName.toLowerCase(),
                     )
 
@@ -124,6 +165,10 @@ export function StatsOnlyOverlay({
                     const playerRank = playerResult ? data.items.indexOf(playerResult) + 1 : null
                     const rewards = calculateRewards(playerRank)
 
+                    // Calculate weekly rank and rewards
+                    const weeklyRank = weeklyPlayerResult ? weeklyData.items.indexOf(weeklyPlayerResult) + 1 : null
+                    const weeklyRewards = calculateWeeklyRewards(weeklyRank)
+
                     return {
                         trackId: track.value,
                         trackName: track.label,
@@ -132,6 +177,8 @@ export function StatsOnlyOverlay({
                         bestPlayer: bestResult ? bestResult.player : null,
                         bestTime: bestResult ? bestResult.time : null,
                         rewards: rewards,
+                        weeklyRank: weeklyRank, // Add weeklyRank to the returned object
+                        weeklyRewards: weeklyRewards,
                         loading: false,
                     }
                 } catch (error) {
@@ -178,10 +225,18 @@ export function StatsOnlyOverlay({
         null as number | null,
     )
 
-    // Calculate total rewards
-    const totalRewards = results.reduce((sum, result) => {
+    // Calculate total seasonal rewards
+    const totalSeasonalRewards = results.reduce((sum, result) => {
         return result.rewards ? sum + result.rewards : sum
     }, 0)
+
+    // Calculate total weekly rewards
+    const totalWeeklyRewards = results.reduce((sum, result) => {
+        return result.weeklyRewards ? sum + result.weeklyRewards : sum
+    }, 0)
+
+    // Calculate combined total rewards
+    const totalRewards = totalSeasonalRewards + totalWeeklyRewards
 
     // Futuristic Horizontal Layout
     if (theme === "futuristic" && layout === "horizontal") {
@@ -200,7 +255,7 @@ export function StatsOnlyOverlay({
                                 </div>
                             )}
 
-                            <div className="flex items-center justify-center gap-5 text-xs">
+                            <div className="flex items-center justify-center gap-4 text-xs">
                                 <div className="stat-item">
                                     <div className="stat-label text-[10px] text-primary/80 uppercase tracking-wider mb-0.5">Ranked</div>
                                     <div className="stat-value font-mono font-bold">
@@ -231,16 +286,29 @@ export function StatsOnlyOverlay({
                                 </div>
 
                                 <div className="stat-item">
-                                    <div className="stat-label text-[10px] text-primary/80 uppercase tracking-wider mb-0.5">Rewards</div>
-                                    <div className="stat-value font-mono font-bold flex items-center">
-                                        {totalRewards > 0 ? (
-                                            <>
-                                                {totalRewards.toLocaleString()}
-                                                <Zap className="ml-0.5 h-3 w-3 text-yellow-500" />
-                                            </>
-                                        ) : (
-                                            "-"
-                                        )}
+                                    <div className="stat-label text-[10px] text-primary/80 uppercase tracking-wider mb-0.5">
+                                        Seasonal FLEX
+                                    </div>
+                                    <div className="stat-value font-mono font-bold text-yellow-500">
+                                        {totalSeasonalRewards > 0 ? totalSeasonalRewards.toLocaleString() : "-"}
+                                    </div>
+                                </div>
+
+                                <div className="stat-item">
+                                    <div className="stat-label text-[10px] text-primary/80 uppercase tracking-wider mb-0.5">
+                                        Weekly FLEX
+                                    </div>
+                                    <div className="stat-value font-mono font-bold text-green-500">
+                                        {totalWeeklyRewards > 0 ? totalWeeklyRewards.toLocaleString() : "-"}
+                                    </div>
+                                </div>
+
+                                <div className="stat-item">
+                                    <div className="stat-label text-[10px] text-primary/80 uppercase tracking-wider mb-0.5">
+                                        Total FLEX
+                                    </div>
+                                    <div className="stat-value font-mono font-bold text-primary">
+                                        {totalRewards > 0 ? totalRewards.toLocaleString() : "-"}
                                     </div>
                                 </div>
                             </div>
@@ -311,17 +379,29 @@ export function StatsOnlyOverlay({
                         </div>
 
                         <div className="stat-item">
-                            <div className="stat-label text-[10px] text-primary/80 uppercase tracking-wider mb-0.5">Rewards</div>
-                            <div className="stat-value font-mono font-bold flex items-center">
-                                {totalRewards > 0 ? (
-                                    <>
-                                        {totalRewards.toLocaleString()}
-                                        <Zap className="ml-0.5 h-3 w-3 text-yellow-500" />
-                                    </>
-                                ) : (
-                                    "-"
-                                )}
+                            <div className="stat-label text-[10px] text-primary/80 uppercase tracking-wider mb-0.5">
+                                Seasonal FLEX
                             </div>
+                            <div className="stat-value font-mono font-bold text-yellow-500">
+                                {totalSeasonalRewards > 0 ? totalSeasonalRewards.toLocaleString() : "-"}
+                            </div>
+                            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-red-500/20 to-transparent mt-1"></div>
+                        </div>
+
+                        <div className="stat-item">
+                            <div className="stat-label text-[10px] text-primary/80 uppercase tracking-wider mb-0.5">Weekly FLEX</div>
+                            <div className="stat-value font-mono font-bold text-green-500">
+                                {totalWeeklyRewards > 0 ? totalWeeklyRewards.toLocaleString() : "-"}
+                            </div>
+                            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-red-500/20 to-transparent mt-1"></div>
+                        </div>
+
+                        <div className="stat-item">
+                            <div className="stat-label text-[10px] text-primary/80 uppercase tracking-wider mb-0.5">Total FLEX</div>
+                            <div className="stat-value font-mono font-bold text-primary">
+                                {totalRewards > 0 ? totalRewards.toLocaleString() : "-"}
+                            </div>
+                            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-red-500/20 to-transparent mt-1"></div>
                         </div>
 
                         {/* Referral URL */}
@@ -354,7 +434,7 @@ export function StatsOnlyOverlay({
                         </div>
                     )}
 
-                    <div className="flex items-center justify-center gap-4 text-xs">
+                    <div className="flex items-center justify-center gap-3 text-xs">
                         <div>
                             <span className="text-muted-foreground mr-1">Ranked:</span>
                             <span className="font-medium">
@@ -382,8 +462,20 @@ export function StatsOnlyOverlay({
                             </span>
                         </div>
                         <div>
-                            <span className="text-muted-foreground mr-1">Rewards:</span>
-                            <span className="font-medium">{totalRewards > 0 ? totalRewards.toLocaleString() : "-"}</span>
+                            <span className="text-muted-foreground mr-1">Seasonal FLEX:</span>
+                            <span className="font-medium text-yellow-500">
+                                {totalSeasonalRewards > 0 ? totalSeasonalRewards.toLocaleString() : "-"}
+                            </span>
+                        </div>
+                        <div>
+                            <span className="text-muted-foreground mr-1">Weekly FLEX:</span>
+                            <span className="font-medium text-green-500">
+                                {totalWeeklyRewards > 0 ? totalWeeklyRewards.toLocaleString() : "-"}
+                            </span>
+                        </div>
+                        <div>
+                            <span className="text-muted-foreground mr-1">Total FLEX:</span>
+                            <span className="font-medium text-primary">{totalRewards > 0 ? totalRewards.toLocaleString() : "-"}</span>
                         </div>
                     </div>
                 </div>
@@ -435,8 +527,20 @@ export function StatsOnlyOverlay({
                     </span>
                 </div>
                 <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">Rewards:</span>
-                    <span className="font-medium">{totalRewards > 0 ? totalRewards.toLocaleString() : "-"}</span>
+                    <span className="text-muted-foreground">Seasonal FLEX:</span>
+                    <span className="font-medium text-yellow-500">
+                        {totalSeasonalRewards > 0 ? totalSeasonalRewards.toLocaleString() : "-"}
+                    </span>
+                </div>
+                <div className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Weekly FLEX:</span>
+                    <span className="font-medium text-green-500">
+                        {totalWeeklyRewards > 0 ? totalWeeklyRewards.toLocaleString() : "-"}
+                    </span>
+                </div>
+                <div className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Total FLEX:</span>
+                    <span className="font-medium text-primary">{totalRewards > 0 ? totalRewards.toLocaleString() : "-"}</span>
                 </div>
 
                 {/* Referral URL */}
@@ -447,4 +551,3 @@ export function StatsOnlyOverlay({
         </div>
     )
 }
-
