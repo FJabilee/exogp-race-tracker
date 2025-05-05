@@ -22,9 +22,9 @@ export const trackOptions = [
     { value: "bounty-obelisk-vipersgorge-slitherreverse", label: "Slither Reverse" },
 ]
 
-// Time Range options with fixed date calculations
+// Update the Stage 3 time range to March 14th to May 19th, 2025
 export const timeRangeOptions = [
-    { value: "stage3", label: "Stage 3", startDate: "2025-03-13T17:00:00.000Z", endDate: "2025-04-28T06:59:59.999Z" },
+    { value: "stage3", label: "Stage 3", startDate: "2025-03-14T00:00:00.000Z", endDate: "2025-05-19T23:59:59.999Z" },
     { value: "stage2", label: "Stage 2", startDate: "2025-01-01T00:00:00.000Z", endDate: "2025-03-13T16:59:59.999Z" },
     { value: "all", label: "All Time", startDate: "2024-01-01T00:00:00.000Z", endDate: new Date().toISOString() },
     {

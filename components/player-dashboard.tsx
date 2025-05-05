@@ -56,20 +56,29 @@ export function calculateWeeklyRewards(rank: number | null): number | null {
     return 0 // No rewards for ranks beyond 50th
 }
 
-// Helper function to get the current week's start and end dates
+// Updated to use Sunday 12AM UTC as the weekly reset time
 export function getCurrentWeekDates() {
+    // Get current date in UTC
     const now = new Date()
+
+    // Find the most recent Sunday at 12AM UTC
     const startOfWeek = new Date(now)
+    const dayOfWeek = startOfWeek.getUTCDay() // 0 = Sunday, 1 = Monday, etc.
 
-    // Set to the beginning of the current week (Sunday)
-    const day = startOfWeek.getDay() // 0 = Sunday, 1 = Monday, etc.
-    startOfWeek.setDate(startOfWeek.getDate() - day) // Go back to Sunday
-    startOfWeek.setHours(0, 0, 0, 0) // Set to beginning of day
+    // Calculate days to subtract to get to the previous Sunday
+    startOfWeek.setUTCDate(startOfWeek.getUTCDate() - dayOfWeek)
 
-    // End date is current time
+    // Set time to 00:00:00 UTC (12AM)
+    startOfWeek.setUTCHours(0, 0, 0, 0)
+
+    // If current time is before Sunday 12AM, go back one more week
+    if (now < startOfWeek) {
+        startOfWeek.setUTCDate(startOfWeek.getUTCDate() - 7)
+    }
+
     return {
         startDate: startOfWeek.toISOString(),
-        endDate: now.toISOString(),
+        endDate: now.toISOString(), // Current time as end date
     }
 }
 

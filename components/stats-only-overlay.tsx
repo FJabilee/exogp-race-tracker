@@ -36,27 +36,29 @@ const getModeLabel = (value: string): string => {
     }
 }
 
-// Function to get the current week's start and end dates
+// Updated to use Sunday 12AM UTC as the weekly reset time
 const getCurrentWeekDates = () => {
+    // Get current date in UTC
     const now = new Date()
-    const dayOfWeek = now.getDay()
+
+    // Find the most recent Sunday at 12AM UTC
     const startOfWeek = new Date(now)
-    startOfWeek.setDate(now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)) // Adjust to Monday
+    const dayOfWeek = startOfWeek.getUTCDay() // 0 = Sunday, 1 = Monday, etc.
 
-    const endOfWeek = new Date(startOfWeek)
-    endOfWeek.setDate(startOfWeek.getDate() + 6) // Adjust to Sunday
+    // Calculate days to subtract to get to the previous Sunday
+    startOfWeek.setUTCDate(startOfWeek.getUTCDate() - dayOfWeek)
 
-    // Format dates to 'YYYY-MM-DD'
-    const formatDate = (date: Date) => {
-        const year = date.getFullYear()
-        const month = String(date.getMonth() + 1).padStart(2, "0")
-        const day = String(date.getDate()).padStart(2, "0")
-        return `${year}-${month}-${day}`
+    // Set time to 00:00:00 UTC (12AM)
+    startOfWeek.setUTCHours(0, 0, 0, 0)
+
+    // If current time is before Sunday 12AM, go back one more week
+    if (now < startOfWeek) {
+        startOfWeek.setUTCDate(startOfWeek.getUTCDate() - 7)
     }
 
     return {
-        startDate: formatDate(startOfWeek),
-        endDate: formatDate(endOfWeek),
+        startDate: startOfWeek.toISOString(),
+        endDate: now.toISOString(), // Current time as end date
     }
 }
 
